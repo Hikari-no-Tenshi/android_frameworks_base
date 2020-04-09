@@ -96,6 +96,7 @@ public class KeyguardBouncer {
     private boolean mIsAnimatingAway;
     private boolean mIsScrimmed;
     private ViewGroup mLockIconContainer;
+    private boolean mUnlockWithoutBouncer;
 
     public static final int UNLOCK_SEQUENCE_DEFAULT = 0;
     public static final int UNLOCK_SEQUENCE_BOUNCER_FIRST = 1;
@@ -291,10 +292,16 @@ public class KeyguardBouncer {
         mShowingSoon = false;
     }
 
+    public void setUnlockWithoutBouncer(boolean unlockWithoutBouncer) {
+        mUnlockWithoutBouncer = unlockWithoutBouncer;
+    }
+
     public void showWithDismissAction(OnDismissAction r, Runnable cancelAction) {
         ensureView();
         mKeyguardView.setOnDismissAction(r, cancelAction);
-        show(false /* resetSecuritySelection */);
+        if (!(mUnlockWithoutBouncer && mKeyguardUpdateMonitor.isUnlockingWithBiometricAllowed())) {
+            show(false /* resetSecuritySelection */);
+        }
     }
 
     public void hide(boolean destroyView) {

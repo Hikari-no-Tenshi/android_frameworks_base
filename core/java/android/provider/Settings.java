@@ -5288,6 +5288,12 @@ public final class Settings {
         public static final String SCREENRECORD_LOW_QUALITY = "screenrecord_low_quality";
 
         /**
+         * Whether to unlock with fingerprint on notification double tap
+         * @hide
+         */
+        public static final String UNLOCK_WITHOUT_BOUNCER = "unlock_without_bouncer";
+
+        /**
          * Settings to backup. This is here so that it's in the same place as the settings
          * keys and easy to update.
          *
