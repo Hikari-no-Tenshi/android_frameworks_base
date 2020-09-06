@@ -145,6 +145,9 @@ public class VolumeDialogImpl implements VolumeDialog,
     private static final long USER_ATTEMPT_GRACE_PERIOD = 1000;
     private static final int UPDATE_ANIMATION_DURATION = 80;
 
+    public static final String SHOW_APP_VOLUME =
+            "system:" + Settings.System.SHOW_APP_VOLUME;
+
     static final int DIALOG_TIMEOUT_MILLIS = 3000;
     static final int DIALOG_SAFETYWARNING_TIMEOUT_MILLIS = 5000;
     static final int DIALOG_ODI_CAPTIONS_TOOLTIP_TIMEOUT_MILLIS = 5000;
@@ -208,6 +211,9 @@ public class VolumeDialogImpl implements VolumeDialog,
     private boolean mHasSeenODICaptionsTooltip;
     private ViewStub mODICaptionsTooltipViewStub;
     private View mODICaptionsTooltipView = null;
+
+    private boolean mShowAppVolume;
+
     private boolean mVolumePanelOnLeft;
 
     private LocalMediaManager mLocalMediaManager;
@@ -245,6 +251,7 @@ public class VolumeDialogImpl implements VolumeDialog,
         final TunerService tunerService = Dependency.get(TunerService.class);
         tunerService.addTunable(this, VOLUME_PANEL_ON_LEFT);
         tunerService.addTunable(this, AUDIO_PANEL_VIEW_TIMEOUT);
+        tunerService.addTunable(this, SHOW_APP_VOLUME);
 
         setDarkMode();
 
@@ -473,6 +480,16 @@ public class VolumeDialogImpl implements VolumeDialog,
                 break;
             case AUDIO_PANEL_VIEW_TIMEOUT:
                 mTimeOut = TunerService.parseInteger(newValue, 3) * 1000;
+                break;
+            case SHOW_APP_VOLUME:
+                final boolean showAppVolume = TunerService.parseIntegerSwitch(newValue, false);
+                if (mShowAppVolume != showAppVolume) {
+                    mShowAppVolume = showAppVolume;
+                    mHandler.post(() -> {
+                        // Trigger panel rebuild on next show
+                        mConfigChanged = true;
+                    });
+                }
                 break;
             default:
                 break;
@@ -852,6 +869,7 @@ public class VolumeDialogImpl implements VolumeDialog,
             final VolumeRow row = mAppRows.get(i);
             removeAppRow(row);
         }
+        if (!mShowAppVolume) return;
         List<AppTrackData> trackDatas = mController.getAudioManager().listAppTrackDatas();
         for (AppTrackData data : trackDatas) {
             if (data.isActive()) {
