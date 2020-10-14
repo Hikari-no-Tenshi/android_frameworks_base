@@ -33,6 +33,7 @@ import android.widget.RemoteViews;
 import android.widget.TextView;
 
 import com.android.internal.annotations.VisibleForTesting;
+import com.android.internal.widget.CachingIconView;
 import com.android.systemui.Dependency;
 import com.android.systemui.R;
 import com.android.systemui.statusbar.CrossFadeHelper;
@@ -351,9 +352,8 @@ public class NotificationChildrenContainer extends ViewGroup implements TunerSer
         RemoteViews header = builder.makeNotificationHeader();
         if (mNotificationHeader == null) {
             mNotificationHeader = (NotificationHeaderView) header.apply(getContext(), this);
-            final View expandButton = mNotificationHeader.findViewById(
-                    com.android.internal.R.id.expand_button);
-            expandButton.setVisibility(VISIBLE);
+            mNotificationHeader.findViewById(com.android.internal.R.id.expand_button)
+                    .setVisibility(VISIBLE);
             mNotificationHeader.setOnClickListener(mHeaderClickListener);
             mNotificationHeaderWrapper = NotificationViewWrapper.wrap(getContext(),
                     mNotificationHeader, mContainingNotification);
@@ -394,9 +394,8 @@ public class NotificationChildrenContainer extends ViewGroup implements TunerSer
             if (mNotificationHeaderLowPriority == null) {
                 mNotificationHeaderLowPriority = (NotificationHeaderView) header.apply(getContext(),
                         this);
-                final View expandButton = mNotificationHeaderLowPriority.findViewById(
-                        com.android.internal.R.id.expand_button);
-                expandButton.setVisibility(VISIBLE);
+                mNotificationHeaderLowPriority.findViewById(com.android.internal.R.id.expand_button)
+                        .setVisibility(VISIBLE);
                 mNotificationHeaderLowPriority.setOnClickListener(mHeaderClickListener);
                 mNotificationHeaderWrapperLowPriority = NotificationViewWrapper.wrap(getContext(),
                         mNotificationHeaderLowPriority, mContainingNotification);
@@ -902,12 +901,12 @@ public class NotificationChildrenContainer extends ViewGroup implements TunerSer
         return mContainingNotification;
     }
 
-    public NotificationHeaderView getHeaderView() {
-        return mNotificationHeader;
+    public NotificationViewWrapper getNotificationViewWrapper() {
+        return mNotificationHeaderWrapper;
     }
 
-    public NotificationHeaderView getLowPriorityHeaderView() {
-        return mNotificationHeaderLowPriority;
+    public NotificationViewWrapper getLowPriorityViewWrapper() {
+        return mNotificationHeaderWrapperLowPriority;
     }
 
     @VisibleForTesting
@@ -1258,16 +1257,15 @@ public class NotificationChildrenContainer extends ViewGroup implements TunerSer
 
     public void setShelfIconVisible(boolean iconVisible) {
         if (mNotificationHeaderWrapper != null) {
-            NotificationHeaderView header = mNotificationHeaderWrapper.getNotificationHeader();
-            if (header != null) {
-                header.getIcon().setForceHidden(iconVisible);
+            CachingIconView icon = mNotificationHeaderWrapper.getIcon();
+            if (icon != null) {
+                icon.setForceHidden(iconVisible);
             }
         }
         if (mNotificationHeaderWrapperLowPriority != null) {
-            NotificationHeaderView header
-                    = mNotificationHeaderWrapperLowPriority.getNotificationHeader();
-            if (header != null) {
-                header.getIcon().setForceHidden(iconVisible);
+            CachingIconView icon = mNotificationHeaderWrapperLowPriority.getIcon();
+            if (icon != null) {
+                icon.setForceHidden(iconVisible);
             }
         }
     }
@@ -1288,12 +1286,14 @@ public class NotificationChildrenContainer extends ViewGroup implements TunerSer
         }
     }
 
-    public NotificationHeaderView getVisibleHeader() {
-        NotificationHeaderView header = mNotificationHeader;
+    /**
+     * @return the view wrapper for the currently showing priority.
+     */
+    public NotificationViewWrapper getVisibleWrapper() {
         if (showingAsLowPriority()) {
-            header = mNotificationHeaderLowPriority;
+            return mNotificationHeaderWrapperLowPriority;
         }
-        return header;
+        return mNotificationHeaderWrapper;
     }
 
     public void onExpansionChanged() {
