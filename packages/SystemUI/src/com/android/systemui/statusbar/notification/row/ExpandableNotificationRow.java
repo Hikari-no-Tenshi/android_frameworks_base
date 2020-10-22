@@ -2920,7 +2920,8 @@ public class ExpandableNotificationRow extends ActivatableNotificationView
         }
         float x = event.getX();
         float y = event.getY();
-        NotificationHeaderView header = getVisibleNotificationViewWrapper().getNotificationHeader();
+        NotificationViewWrapper wrapper = getVisibleNotificationViewWrapper();
+        NotificationHeaderView header = wrapper == null ? null : wrapper.getNotificationHeader();
         if (header != null && header.isInTouchRect(x - getTranslation(), y)) {
             return true;
         }
