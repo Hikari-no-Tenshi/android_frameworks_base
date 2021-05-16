@@ -25,6 +25,7 @@ import android.net.Credentials;
 import android.net.LocalServerSocket;
 import android.net.LocalSocket;
 import android.net.NetworkUtils;
+import android.os.Build;
 import android.os.FactoryTest;
 import android.os.IVold;
 import android.os.Process;
@@ -855,8 +856,11 @@ public final class Zygote {
             Log.w(loggingTag, "Unable to set package name.");
         }
 
-        // Set pixel props
-        PixelPropsUtils.setProps(args.mPackageName);
+        String patchCrDroid = Build.VERSION.SECURITY_PATCH_CRDROID;
+        if ("".equals(patchCrDroid)) {
+            // Set pixel props
+            PixelPropsUtils.setProps(args.mPackageName);
+        }
     }
 
     private static final String USAP_ERROR_PREFIX = "Invalid command to USAP: ";
