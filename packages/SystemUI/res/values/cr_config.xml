@@ -45,4 +45,7 @@
     
     <!-- Whether to disable assist hint on lockscreen -->
     <bool name="config_disableAssistHintOnLockscreen">false</bool>
+
+    <!-- Whether to dim FOD icon -->
+    <bool name="config_fodIconNeedsDim">false</bool>
 </resources>
