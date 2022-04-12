@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (C) 2019-2021 crDroid Android Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -31,17 +31,15 @@ import com.android.systemui.statusbar.StatusIconDisplayable;
 import com.android.keyguard.KeyguardUpdateMonitor;
 import com.android.keyguard.KeyguardUpdateMonitorCallback;
 
-
 /** @hide */
 public class StatusBarNetworkTraffic extends NetworkTraffic implements DarkReceiver,
         StatusIconDisplayable {
-
-
     public static final String SLOT = "networktraffic";
 
     private int mVisibleState = -1;
     private boolean mSystemIconVisible = true;
     private boolean mColorIsStatic;
+    protected boolean mAttached;
 
     private final KeyguardUpdateMonitor mKeyguardUpdateMonitor;
     private boolean mKeyguardShowing;
@@ -59,7 +57,24 @@ public class StatusBarNetworkTraffic extends NetworkTraffic implements DarkRecei
         setVisibleState(STATE_ICON);
 
         mKeyguardUpdateMonitor = Dependency.get(KeyguardUpdateMonitor.class);
-        mKeyguardUpdateMonitor.registerCallback(mUpdateCallback);
+    }
+
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        if (!mAttached) {
+            mAttached = true;
+            mKeyguardUpdateMonitor.registerCallback(mUpdateCallback);
+        }
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+        if (mAttached) {
+            mKeyguardUpdateMonitor.removeCallback(mUpdateCallback);
+            mAttached = false;
+        }
     }
 
     @Override

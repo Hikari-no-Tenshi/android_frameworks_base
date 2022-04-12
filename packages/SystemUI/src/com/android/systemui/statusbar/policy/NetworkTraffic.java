@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (C) 2019-2021 crDroid Android Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,39 +17,30 @@
 package com.android.systemui.statusbar.policy;
 
 import android.content.BroadcastReceiver;
-import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.res.Resources;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.graphics.PorterDuff;
-import android.graphics.Rect;
 import android.graphics.Typeface;
 import android.net.ConnectivityManager;
-import android.net.LinkProperties;
-import android.net.Network;
-import android.net.NetworkCapabilities;
-import android.net.NetworkRequest;
 import android.net.NetworkStats;
 import android.net.TrafficStats;
 import android.os.Handler;
 import android.os.INetworkManagementService;
+import android.os.Looper;
 import android.os.Message;
 import android.os.RemoteException;
 import android.os.ServiceManager;
 import android.os.SystemClock;
-import android.os.UserHandle;
 import android.text.Spanned;
 import android.text.SpannableString;
 import android.text.TextUtils;
 import android.text.style.RelativeSizeSpan;
 import android.util.AttributeSet;
 import android.util.Log;
-import android.util.TypedValue;
 import android.view.Gravity;
-import android.view.View;
 import android.widget.TextView;
 
 import lineageos.providers.LineageSettings;
@@ -59,7 +50,6 @@ import com.android.systemui.R;
 import com.android.systemui.tuner.TunerService;
 
 import java.text.DecimalFormat;
-import java.util.HashMap;
 
 public class NetworkTraffic extends TextView implements TunerService.Tunable {
     private static final String TAG = "NetworkTraffic";
@@ -110,7 +100,7 @@ public class NetworkTraffic extends TextView implements TunerService.Tunable {
 
     private Drawable mDrawable;
 
-    private int mRefreshInterval = 2;
+    private long mRefreshInterval = 2;
 
     protected boolean mAttached;
     private boolean mHideArrows;
@@ -119,10 +109,10 @@ public class NetworkTraffic extends TextView implements TunerService.Tunable {
 
     protected boolean mVisible = true;
 
-    private ConnectivityManager mConnectivityManager;
+    private final ConnectivityManager mConnectivityManager;
 
-    private RelativeSizeSpan mSpeedRelativeSizeSpan = new RelativeSizeSpan(0.70f);
-    private RelativeSizeSpan mUnitRelativeSizeSpan = new RelativeSizeSpan(0.65f);
+    private final RelativeSizeSpan mSpeedRelativeSizeSpan = new RelativeSizeSpan(0.70f);
+    private final RelativeSizeSpan mUnitRelativeSizeSpan = new RelativeSizeSpan(0.65f);
 
     protected boolean mEnabled = false;
     protected boolean mConnectionAvailable = true;
@@ -177,7 +167,7 @@ public class NetworkTraffic extends TextView implements TunerService.Tunable {
         }
     }
 
-    private Handler mTrafficHandler = new Handler() {
+    private final Handler mTrafficHandler = new Handler(Looper.getMainLooper()) {
         @Override
         public void handleMessage(Message msg) {
             long rxBytes = 0;
@@ -356,7 +346,7 @@ public class NetworkTraffic extends TextView implements TunerService.Tunable {
         }
     };
 
-    private class TetheringStats {
+    private static class TetheringStats {
         long txBytes;
         long rxBytes;
     }
@@ -427,7 +417,7 @@ public class NetworkTraffic extends TextView implements TunerService.Tunable {
             case NETWORK_TRAFFIC_AUTOHIDE_THRESHOLD:
                 int autohidethreshold =
                         TunerService.parseInteger(newValue, 0);
-                mAutoHideThreshold = autohidethreshold * Kilo; /* Convert kB to Bytes */
+                mAutoHideThreshold = (long) autohidethreshold * Kilo; /* Convert kB to Bytes */
                 updateViews();
                 break;
             case NETWORK_TRAFFIC_UNITS:
