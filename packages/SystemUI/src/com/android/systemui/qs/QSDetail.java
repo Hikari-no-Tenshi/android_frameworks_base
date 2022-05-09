@@ -130,9 +130,6 @@ public class QSDetail extends LinearLayout implements TunerService.Tunable {
             }
         };
         mDetailDoneButton.setOnClickListener(doneListener);
-
-        Dependency.get(TunerService.class).addTunable(this,
-                STATUS_BAR_CUSTOM_HEADER);
     }
 
     @Override
@@ -146,6 +143,19 @@ public class QSDetail extends LinearLayout implements TunerService.Tunable {
             default:
                 break;
         }
+    }
+
+    @Override
+    public void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        Dependency.get(TunerService.class).addTunable(this,
+                STATUS_BAR_CUSTOM_HEADER);
+    }
+
+    @Override
+    public void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+        Dependency.get(TunerService.class).removeTunable(this);
     }
 
     public void setQsPanel(QSPanel panel, QuickStatusBarHeader header, View footer) {
