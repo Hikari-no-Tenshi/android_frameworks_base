@@ -30,6 +30,7 @@ import android.content.Context;
 import android.content.res.ColorStateList;
 import android.os.Bundle;
 import android.os.SystemClock;
+import android.os.UserHandle;
 import android.provider.Settings;
 import android.view.KeyEvent;
 import android.view.View;
@@ -65,7 +66,6 @@ import com.android.systemui.statusbar.notification.ViewGroupFadeHelper;
 import com.android.systemui.statusbar.phone.KeyguardBouncer.BouncerExpansionCallback;
 import com.android.systemui.statusbar.policy.ConfigurationController;
 import com.android.systemui.statusbar.policy.KeyguardStateController;
-import com.android.systemui.tuner.TunerService;
 
 import java.io.PrintWriter;
 import java.util.ArrayList;
@@ -83,7 +83,7 @@ import javax.inject.Singleton;
 public class StatusBarKeyguardViewManager implements RemoteInputController.Callback,
         StatusBarStateController.StateListener, ConfigurationController.ConfigurationListener,
         PanelExpansionListener, NavigationModeController.ModeChangedListener,
-        KeyguardViewController, TunerService.Tunable {
+        KeyguardViewController {
 
     // When hiding the Keyguard with timing supplied from WindowManager, better be early than late.
     private static final long HIDE_TIMING_CORRECTION_MS = - 16 * 3;
@@ -100,14 +100,6 @@ public class StatusBarKeyguardViewManager implements RemoteInputController.Callb
     private static final long KEYGUARD_DISMISS_DURATION_LOCKED = 2000;
 
     private static String TAG = "StatusBarKeyguardViewManager";
-
-    private static final String LOCKSCREEN_LOCK_ICON =
-            "system:" + Settings.System.LOCKSCREEN_LOCK_ICON;
-    private static final String LOCKSCREEN_BLUR =
-            "system:" + Settings.System.LOCKSCREEN_BLUR;
-
-    private boolean mLockIcon;
-    private float mLockScreenBlur;
 
     protected final Context mContext;
     private final ConfigurationController mConfigurationController;
@@ -200,7 +192,6 @@ public class StatusBarKeyguardViewManager implements RemoteInputController.Callb
     private final KeyguardUpdateMonitor mKeyguardUpdateManager;
     private KeyguardBypassController mBypassController;
 
-    private final TunerService mTunerService;
     private final BlurUtils mBlurUtils;
 
     private final KeyguardUpdateMonitorCallback mUpdateMonitorCallback =
@@ -229,7 +220,6 @@ public class StatusBarKeyguardViewManager implements RemoteInputController.Callb
             NotificationShadeWindowController notificationShadeWindowController,
             KeyguardStateController keyguardStateController,
             NotificationMediaManager notificationMediaManager,
-            TunerService tunerService,
             BlurUtils blurUtils) {
         mContext = context;
         mViewMediatorCallback = callback;
@@ -242,7 +232,6 @@ public class StatusBarKeyguardViewManager implements RemoteInputController.Callb
         mKeyguardUpdateManager = keyguardUpdateMonitor;
         mStatusBarStateController = sysuiStatusBarStateController;
         mDockManager = dockManager;
-        mTunerService = tunerService;
         mBlurUtils = blurUtils;
     }
 
@@ -281,24 +270,6 @@ public class StatusBarKeyguardViewManager implements RemoteInputController.Callb
         if (mDockManager != null) {
             mDockManager.addListener(mDockEventListener);
             mIsDocked = mDockManager.isDocked();
-        }
-        mTunerService.addTunable(this, LOCKSCREEN_LOCK_ICON);
-        mTunerService.addTunable(this, LOCKSCREEN_BLUR);
-    }
-
-    @Override
-    public void onTuningChanged(String key, String newValue) {
-        switch (key) {
-            case LOCKSCREEN_LOCK_ICON:
-                mLockIcon =
-                    TunerService.parseIntegerSwitch(newValue, true);
-                break;
-            case LOCKSCREEN_BLUR:
-                mLockScreenBlur =
-                    (float) TunerService.parseInteger(newValue, 0) / 100f;
-                break;
-            default:
-                break;
         }
     }
 
@@ -856,10 +827,17 @@ public class StatusBarKeyguardViewManager implements RemoteInputController.Callb
         boolean bouncerDismissible = !mBouncer.isFullscreenBouncer();
         boolean remoteInputActive = mRemoteInputActive;
 
-        if (mLockScreenBlur > 0f && mBlurUtils.supportsBlursOnWindows()) {
+        boolean lockIcon = Settings.System.getIntForUser(
+                mContext.getContentResolver(), Settings.System.LOCKSCREEN_LOCK_ICON, 1,
+                UserHandle.USER_CURRENT) == 1;
+        float lockScreenBlur = (float) Settings.System.getIntForUser(
+                mContext.getContentResolver(), Settings.System.LOCKSCREEN_BLUR, 0,
+                UserHandle.USER_CURRENT) / 100f;
+
+        if (lockScreenBlur > 0f && mBlurUtils.supportsBlursOnWindows()) {
             if (showing && !occluded) {
                 mBlurUtils.applyBlur(getViewRootImpl(),
-                    mBlurUtils.blurRadiusOfRatio(mLockScreenBlur));
+                    mBlurUtils.blurRadiusOfRatio(lockScreenBlur));
             } else {
                 mBlurUtils.applyBlur(getViewRootImpl(),
                     mBlurUtils.blurRadiusOfRatio(0));
@@ -882,7 +860,7 @@ public class StatusBarKeyguardViewManager implements RemoteInputController.Callb
             updateNavigationBarVisibility(navBarVisible);
         }
 
-        mLockIconContainer.setVisibility(!mLockIcon || (mLastLockVisible && mDozing)
+        mLockIconContainer.setVisibility(!lockIcon || (mLastLockVisible && mDozing)
                  ? View.GONE : View.VISIBLE);
 
         if (bouncerShowing != mLastBouncerShowing || mFirstUpdate) {
