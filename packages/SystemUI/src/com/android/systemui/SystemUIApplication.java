@@ -48,6 +48,7 @@ public class SystemUIApplication extends Application implements
     public static final String TAG = "SystemUIService";
     private static final boolean DEBUG = false;
 
+    private static Context mContext;
     private ContextComponentHelper mComponentHelper;
     private BootCompleteCacheImpl mBootCompleteCache;
 
@@ -73,6 +74,7 @@ public class SystemUIApplication extends Application implements
         TimingsTraceLog log = new TimingsTraceLog("SystemUIBootTiming",
                 Trace.TRACE_TAG_APP);
         log.traceBegin("DependencyInjection");
+        mContext = getApplicationContext();
         mContextAvailableCallback.onContextAvailable(this);
         mRootComponent = SystemUIFactory.getInstance().getRootComponent();
         mComponentHelper = mRootComponent.getContextComponentHelper();
@@ -129,6 +131,10 @@ public class SystemUIApplication extends Application implements
             // start those components now for the current non-system user.
             startSecondaryUserServicesIfNeeded();
         }
+    }
+
+    public static Context getContext() {
+        return mContext;
     }
 
     /**

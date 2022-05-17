@@ -24,6 +24,7 @@ import android.os.Bundle;
 import android.os.PowerManager;
 import android.os.SystemClock;
 import android.os.SystemProperties;
+import android.os.UserHandle;
 import android.provider.Settings;
 import android.util.Log;
 import android.view.MotionEvent;
@@ -31,6 +32,7 @@ import android.view.View;
 
 import com.android.internal.annotations.VisibleForTesting;
 import com.android.keyguard.KeyguardUpdateMonitor;
+import com.android.systemui.SystemUIApplication;
 import com.android.systemui.assist.AssistManager;
 import com.android.systemui.doze.DozeHost;
 import com.android.systemui.doze.DozeLog;
@@ -45,7 +47,6 @@ import com.android.systemui.statusbar.notification.VisualStabilityManager;
 import com.android.systemui.statusbar.notification.collection.NotificationEntry;
 import com.android.systemui.statusbar.policy.BatteryController;
 import com.android.systemui.statusbar.policy.DeviceProvisionedController;
-import com.android.systemui.tuner.TunerService;
 
 import java.util.ArrayList;
 
@@ -58,7 +59,7 @@ import dagger.Lazy;
  * Implementation of DozeHost for SystemUI.
  */
 @Singleton
-public final class DozeServiceHost implements DozeHost, TunerService.Tunable {
+public final class DozeServiceHost implements DozeHost {
     private static final String TAG = "DozeServiceHost";
     private final ArrayList<Callback> mCallbacks = new ArrayList<>();
     private final DozeLog mDozeLog;
@@ -85,7 +86,6 @@ public final class DozeServiceHost implements DozeHost, TunerService.Tunable {
     private final KeyguardUpdateMonitor mKeyguardUpdateMonitor;
     private final VisualStabilityManager mVisualStabilityManager;
     private final PulseExpansionHandler mPulseExpansionHandler;
-    private final TunerService mTunerService;
     private final NotificationShadeWindowController mNotificationShadeWindowController;
     private final NotificationWakeUpCoordinator mNotificationWakeUpCoordinator;
     private NotificationShadeWindowViewController mNotificationShadeWindowViewController;
@@ -96,10 +96,6 @@ public final class DozeServiceHost implements DozeHost, TunerService.Tunable {
     private View mAmbientIndicationContainer;
     private StatusBar mStatusBar;
     private boolean mSuppressed;
-    private boolean mIsAmbientSwipeEnabled = true;
-
-    private static final String AMBIENT_SWIPE =
-            "system:" + Settings.System.AMBIENT_SWIPE;
 
     @Inject
     public DozeServiceHost(DozeLog dozeLog, PowerManager powerManager,
@@ -116,8 +112,7 @@ public final class DozeServiceHost implements DozeHost, TunerService.Tunable {
             PulseExpansionHandler pulseExpansionHandler,
             NotificationShadeWindowController notificationShadeWindowController,
             NotificationWakeUpCoordinator notificationWakeUpCoordinator,
-            LockscreenLockIconController lockscreenLockIconController,
-            TunerService tunerService) {
+            LockscreenLockIconController lockscreenLockIconController) {
         super();
         mDozeLog = dozeLog;
         mPowerManager = powerManager;
@@ -137,7 +132,6 @@ public final class DozeServiceHost implements DozeHost, TunerService.Tunable {
         mNotificationShadeWindowController = notificationShadeWindowController;
         mNotificationWakeUpCoordinator = notificationWakeUpCoordinator;
         mLockscreenLockIconController = lockscreenLockIconController;
-        mTunerService = tunerService;
     }
 
     // TODO: we should try to not pass status bar in here if we can avoid it.
@@ -156,19 +150,6 @@ public final class DozeServiceHost implements DozeHost, TunerService.Tunable {
         mNotificationPanel = notificationPanel;
         mNotificationShadeWindowViewController = notificationShadeWindowViewController;
         mAmbientIndicationContainer = ambientIndicationContainer;
-        mTunerService.addTunable(this, AMBIENT_SWIPE);
-    }
-
-    @Override
-    public void onTuningChanged(String key, String newValue) {
-        switch (key) {
-            case AMBIENT_SWIPE:
-                mIsAmbientSwipeEnabled =
-                        TunerService.parseIntegerSwitch(newValue, true);
-                break;
-            default:
-                break;
-         }
     }
 
     @Override
@@ -261,7 +242,10 @@ public final class DozeServiceHost implements DozeHost, TunerService.Tunable {
             @Override
             public void onPulseStarted() {
                 callback.onPulseStarted();
-                if (mIsAmbientSwipeEnabled) {
+                boolean isAmbientSwipeEnabled = Settings.System.getIntForUser(
+                        SystemUIApplication.getContext().getContentResolver(),
+                        Settings.System.AMBIENT_SWIPE, 1, UserHandle.USER_CURRENT) == 1;
+                if (isAmbientSwipeEnabled) {
                     mStatusBar.updateNotificationPanelTouchState();
                 }
                 setPulsing(true);
@@ -288,7 +272,10 @@ public final class DozeServiceHost implements DozeHost, TunerService.Tunable {
                 }
                 mStatusBar.updateScrimController();
                 mPulseExpansionHandler.setPulsing(pulsing);
-                if (mIsAmbientSwipeEnabled) {
+                boolean isAmbientSwipeEnabled = Settings.System.getIntForUser(
+                        SystemUIApplication.getContext().getContentResolver(),
+                        Settings.System.AMBIENT_SWIPE, 1, UserHandle.USER_CURRENT) == 1;
+                if (isAmbientSwipeEnabled) {
                     mNotificationWakeUpCoordinator.setPulsing(pulsing);
                 }
             }
